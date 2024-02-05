@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Triangulos on click</title>
+</head>
+<body onload="init()">
+    <canvas id="myCanvas" width="580" height="480"></canvas>
+</body>
+
+<script id="shaderVs" type="x-shader/x-vertex">
+    attribute vec4 a_Position;
+    attribute vec4 a_Color;
+    varying highp vec4 v_Color;
+    void main() {
+        gl_Position = a_Position;
+        v_Color = a_Color;
+    }
+</script>
+
+<script id="shaderFs" type="x-shader/x-fragment">
+    varying highp vec4 v_Color;
+    void main() {
+        gl_FragColor = v_Color;
+    }
+</script>
+
+<script>
+    var clickpoint = [];
+    
+    function init() {
+        // Get canvas object from the DOM
+        var canvas = document.getElementById("myCanvas");
+
+        // Get the rendering context for WebGL
+        var gl = canvas.getContext("webgl");
+
+        // Register event handler
+        canvas.onmousedown = function(ev) {
+            click(ev, gl, canvas);
+        };
+
+        if (!gl) {
+            console.log("Failed to get the rendering context for WebGL");
+            return;
+        }
+
+        // Init shaders
+        var vs = document.getElementById('shaderVs').innerHTML;
+        var fs = document.getElementById('shaderFs').innerHTML;
+        if (!initShaders(gl, vs, fs)) {
+            console.log('Failed to intialize shaders.');
+            return;
+        }
+
+
+        // Set clear color
+        gl.clearColor(0.0, 0.0, 0.0, 1);
+
+        // Clear canvas
+        gl.clear(gl.COLOR_BUFFER_BIT);        
+    }
+
+    function click(ev, gl, canvas) {
+        // Coordinates of canvas origin
+        var rect = ev.target.getBoundingClientRect();
+        // relative x coordinate of click in canvas
+        var clickX = ev.clientX - rect.left;
+        // relative y coordinate of click in canvas
+        var clickY = ev.clientY - rect.top;
+        // WebGL coordinates (3D)
+        var halfCanvasWidth = canvas.width / 2;
+        var halfCanvasHeight = canvas.height / 2;
+        var x = (clickX - halfCanvasWidth) / halfCanvasWidth;
+        var y = (halfCanvasHeight - clickY) / halfCanvasHeight;
+        var xyz = [x, y, 0];
+
+        // ...
+        clickpoint.push(xyz) // guardamos en un array los puntos donde se ha hevho click
+        
+        if (clickpoint.length % 3 == 0){
+
+                //console.log("lista puntos click",clickpoint)
+                var verticesArray=[];
+                var centroides = [];
+
+                for (y=0; y<clickpoint.length; y++){ 
+                    for (z=0; z<clickpoint[y].length; z++){
+                        verticesArray.push(clickpoint[y][z])  // guardamos en un vector fila todos los puntos
+                    } 
+
+                    
+                    if (y % 3 == 0){ // cada 3 puntos, buscamos el centroide del triangulo
+                        
+                        var centro_x = (clickpoint[y][0]+clickpoint[y+1][0]+clickpoint[y+2][0])/3
+                        var centro_y = (clickpoint[y][1]+clickpoint[y+1][1]+clickpoint[y+2][1])/3
+                        centroides.push(centro_x, centro_y) // guardamos el centroide_x y el centroide _y de cada triangulo
+                        
+                    }
+
+                }
+
+            // decidir color
+            var coloresArray = [];
+
+            for (x=0; x<centroides.length;x++){
+                if (x % 2 ==0){ 
+
+                    if(centroides[x] > 0 && centroides[x+1] > 0){ // cuadrante superior derecha, amarillo
+
+                        coloresArray.push(1.0, 1.0, 0.0) // vertice 1
+                        coloresArray.push(1.0, 1.0, 0.0) // vertice 2
+                        coloresArray.push(1.0, 1.0, 0.0) // vertice 3
+                    }
+
+                    if(centroides[x] > 0 && centroides[x+1] < 0){ // caudrante inferior derecha, verde
+
+                        coloresArray.push(0.0, 1.0, 0.0) // vertice 1
+                        coloresArray.push(0.0, 1.0, 0.0) // vertice 2
+                        coloresArray.push(0.0, 1.0, 0.0) // vertice 3
+                    }
+
+                    if(centroides[x] < 0 && centroides[x+1] < 0){ // cuadrante inferior izquierda, rojo
+
+                        coloresArray.push(1.0, 0.0, 0.0) // vertice 1
+                        coloresArray.push(1.0, 0.0, 0.0) // vertice 2
+                        coloresArray.push(1.0, 0.0, 0.0) // vertice 3
+                    }
+
+                    if(centroides[x] < 0 && centroides[x+1] > 0){ // cuadrante superior izquierda, azul
+
+                        coloresArray.push(0.0, 0.0, 1.0) // vertice 1
+                        coloresArray.push(0.0, 0.0, 1.0) // vertice 2
+                        coloresArray.push(0.0, 0.0, 1.0) // vertice 3
+                    }
+                    
+                }
+            }
+
+            // pasamoos a float32 los vertices y colores y vaciamos todos los arrays para evitar errores en las proximas iteraciones
+
+            var colors = new Float32Array(coloresArray) 
+           // console.log("Lista de colores",colors)
+            coloresArray = [];
+
+            console.log("lista centroides",centroides)
+            centroides=[]; 
+
+            var vertices = new Float32Array(verticesArray); 
+            verticesArray=[]; 
+            //console.log("Lista vertices",vertices)
+
+            var dim = 3;
+
+            // Create a buffer object
+            var vertexBuffer = gl.createBuffer();
+            if (!vertexBuffer) {
+                console.log('Failed to create the buffer object');
+                return -1;
+            }
+            gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+            var a_Position = gl.getAttribLocation(gl.program, 'a_Position');
+            if (a_Position < 0) {
+                console.log('Failed to get the storage location of a_Position');
+                return -1;
+            }
+            gl.vertexAttribPointer(a_Position, dim, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(a_Position);
+
+            // Create colors buffer
+            var trianglesColorBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, trianglesColorBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
+            var a_Color = gl.getAttribLocation(gl.program, 'a_Color');
+            gl.vertexAttribPointer(a_Color, dim, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(a_Color);
+
+            var n = vertices.length / dim;
+
+            // Hay que poner esto de nuevo para que no se borre el fondo al ejecutar
+            gl.clearColor(0.0, 0.0, 0.0, 1.0);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+
+            // Draw
+            gl.drawArrays(gl.TRIANGLES, 0, n);
+
+        }
+        
+    }
+
+    function initShaders(gl, vs_source, fs_source) {
+        // Compile shaders
+        var vertexShader = makeShader(gl, vs_source, gl.VERTEX_SHADER);
+        var fragmentShader = makeShader(gl, fs_source, gl.FRAGMENT_SHADER);
+
+        // Create program
+        var glProgram = gl.createProgram();
+
+        // Attach and link shaders to the program
+        gl.attachShader(glProgram, vertexShader);
+        gl.attachShader(glProgram, fragmentShader);
+        gl.linkProgram(glProgram);
+        if (!gl.getProgramParameter(glProgram, gl.LINK_STATUS)) {
+            alert("Unable to initialize the shader program");
+            return false;
+        }
+
+        // Use program
+        gl.useProgram(glProgram);
+        gl.program = glProgram;
+
+        return true;
+    }
+
+    function makeShader(gl, src, type) {
+        var shader = gl.createShader(type);
+        gl.shaderSource(shader, src);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            alert("Error compiling shader: " + gl.getShaderInfoLog(shader));
+            return;
+        }
+        return shader;
+    }
+</script>
+
+</html>

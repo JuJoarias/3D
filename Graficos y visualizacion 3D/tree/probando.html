@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>Three.js: Geometries</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.148.0/three.min.js"></script>
+
+<script>
+   function init() {
+      // Scene
+      var scene = new THREE.Scene();
+
+      // Renderer
+      var renderer = new THREE.WebGLRenderer();
+      var sceneWidth = window.innerWidth;
+      var sceneHeight = window.innerHeight;
+      renderer.setSize(sceneWidth, sceneHeight);
+      document.body.appendChild(renderer.domElement);
+
+      // Axes helper
+      var axes = new THREE.AxesHelper(20);
+      scene.add(axes);
+
+      // Cube
+      var cubeGeometry = new THREE.BoxGeometry(4, 4, 4);
+      var cubeMaterial = new THREE.MeshBasicMaterial({
+         color : 0xFF0000,
+         wireframe : true
+      });
+      var cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+
+      cube.position.set(2, 0, 2);
+
+      scene.add(cube);
+
+      // icosaedro
+      var icoGeometry = new THREE.IcosahedronGeometry(5,0);
+      var icoMaterial = new THREE.MeshBasicMaterial({
+         color : 0xFF0000,
+         wireframe : true
+      });
+      var ico = new THREE.Mesh(icoGeometry, icoMaterial);
+
+      ico.position.set(20, 0, 2);
+
+      scene.add(ico);
+
+      // anillo
+      var ringGeometry = new THREE.RingGeometry(1,5,32);
+      var ringMaterial = new THREE.MeshBasicMaterial({
+         color : 0xFF0000,
+         wireframe : true
+      });
+      var ring = new THREE.Mesh(ringGeometry, ringMaterial);
+
+      ring.position.set(-20, 0, 2);
+
+      scene.add(ring);
+
+      // Sphere
+      var sphereGeometry = new THREE.SphereGeometry(4, 20, 20);
+      var texture = new THREE.TextureLoader().load("earth.png")
+      var sphereMaterial = new THREE.MeshStandardMaterial({
+         map : texture
+      });
+      var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+
+      sphere.position.set(-10, 4, 2);
+
+      scene.add(sphere);
+
+      const geometry = new THREE.TorusKnotGeometry( 3, 1, 20, 8 );
+        const material = new THREE.MeshBasicMaterial( { color: 0xFF0000 } );
+        const torusKnot = new THREE.Mesh( geometry, material );
+        scene.add( torusKnot );
+
+      // Camera
+      var camera = new THREE.PerspectiveCamera(90, sceneWidth / sceneHeight, 0.01, 100);
+      camera.position.set(-20, 20, 20);
+      camera.lookAt(scene.position);
+      
+      // Render
+      renderer.render(scene, camera);
+   }
+</script>
+</head>
+
+<body onload="init()">
+</body>
+
+</html>
